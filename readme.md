@@ -16,6 +16,33 @@ Assembly language provides direct control over the microcontroller's hardware, e
 - AVRA assembler (Linux equivalent to Atmel's avrasm2)
 - avrdude (programmer software)
 
+### Using WSL for Arduino Development
+
+If you are using Windows Subsystem for Linux (WSL) to develop and program your Arduino, follow these steps to enable USB device access:
+
+1. Install `usbipd` on your Windows host machine:
+  ```bash
+  winget install usbipd
+  ```
+
+2. List available USB devices to identify your Arduino:
+  ```bash
+  usbipd list
+  ```
+  Look for the Arduino device in the list and note its `BUSID` (e.g., `1-2`).
+
+3. Bind the Arduino device to make it accessible to WSL:
+  ```bash
+  usbipd bind --busid <BUSID>
+  ```
+
+4. Attach the device to your WSL instance:
+  ```bash
+  usbipd attach --wsl --busid <BUSID>
+  ```
+
+Replace `<BUSID>` with the actual BUSID of your Arduino device. Once attached, the Arduino will be accessible within your WSL environment.
+
 ## Installation
 
 To install the required software on Debian-based Linux distributions:
