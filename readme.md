@@ -118,7 +118,7 @@ Replace `/dev/ttyACM0` with the correct device path for your Arduino.
 ## Credits
 
 Macro files in the `include/` directory were created by:
-- Syed Tehseen ul Hasan Shah, Lecturer, University of Engineering and Technology Lahore
+- Syed Tehseen ul Hasan Shah, Lecturer, University of Engineering and Technology Lahore [github](https://github.com/tehseenhasan)
 
 ## License
 

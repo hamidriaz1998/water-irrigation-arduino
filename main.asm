@@ -1,27 +1,45 @@
 .include "include/m328pdef.inc"
-.def	mask 	= r16	; mask register
-.def	ledR 	= r17	; led register
-.def	oLoopR 	= r18	; outer loop register
-.def	iLoopRl = r24	; inner loop register low
-.def	iLoopRh = r25	; inner loop register high
-.equ	oVal 	= 80	; outer loop value
-.equ	iVal 	= 2000	; inner loop value
+.include "include/delay_Macro.inc"
+.include "include/1602_LCD_Macros.inc"
 .cseg
-.org	0x00
-clr	ledR		; clear led register to zero
-ldi	mask,0xFF	; load the mask register 11111111
-out	DDRB,mask	; set PORTB to all 8 bits OUT
-start:
-out	PORTB,ledR	; write led register to PORTB
-inc     ledR		; increment ledR from 0 to 255
-ldi     oLoopR,oVal	; initialize outer loop count
-oLoop:
-ldi    iLoopRl,LOW(iVal)	; intialize inner loop count in inner
-ldi    iLoopRh,HIGH(iVal)	; loop high and low registers
-iLoop:
-sbiw    iLoopRl,1	; decrement inner loop register
-brne    iLoop		; branch to iLoop if iLoop register != 0
-dec	oLoopR		; decrement outer loop register
-brne    oLoop		; branch to oLoop if outer loop register != 0
-rjmp    start		; jump back to start
+.org 0x0000
+LCD_init ; initilize the 16x2 LCD
 
+loop:
+
+LCD_send_a_command 0x01 ; clear the LCD
+; Display an integer on LCD
+LDI r16, 123
+LCD_send_a_register r16
+delay 1000
+LCD_send_a_command 0x01 ; clear the LCD
+; Display character on LCD
+; Sending Hello World to LCD character-by-character
+LCD_send_a_character 0x48 ; 'H'
+LCD_send_a_character 0x45 ; 'E'
+LCD_send_a_character 0x4C ; 'L'
+LCD_send_a_character 0x4C ; 'L'
+LCD_send_a_character 0x4F ; 'O'
+LCD_send_a_character 0x20 ; ' ' (space)
+LCD_send_a_character 0x57 ; 'W'
+LCD_send_a_character 0x4F ; 'O'
+LCD_send_a_character 0x52 ; 'R'
+LCD_send_a_character 0x4C ; 'L'
+LCD_send_a_character 0x44 ; 'D'
+LCD_send_a_character 0x21 ; '!'
+LCD_send_a_command 0xC0 ; move curser to next line
+LCD_send_a_character 0x43 ; 'C'
+LCD_send_a_character 0x4F ; 'O'
+LCD_send_a_character 0x41 ; 'A'
+LCD_send_a_character 0x4C ; 'L'
+LCD_send_a_command 0x14 ; move curser one step forward (another way to add space)
+LCD_send_a_character 0x4C ; 'L'
+LCD_send_a_character 0x41 ; 'A'
+LCD_send_a_character 0x42 ; 'B'
+delay 1000
+LCD_send_a_command 0x01 ; clear the LCD
+rjmp loop
+; it is recommanded to define the strings at the end of the code segment
+; The length of the string must be even number of bytes
+hello_string: .db "Tehseen.",0
+len: .equ string_len = (2 * (len - hello_string)) - 1
