@@ -82,10 +82,21 @@ wait_conversion:
     ;LDI r16, PERCENT_MAX         ; Cap at 100%
 percentage_ok:
 
-    ; Display percentage value
-    LCD_send_a_register r24
-    CLR r24
-    CLR r25
+    ; For soil moisture sensors, we need to invert the value as higher ADC values 
+    ; typically mean drier soil (less moisture)
+    ; r24:r25 currently has a value from 0-100 after mapping, we need to invert it
+    LDI r16, PERCENT_MAX   ; Load 100 into r16
+    SUB r16, r24           ; Calculate 100 - moisture_value to invert the reading
+    
+    ; Ensure value is within bounds (should be 0-100)
+    CPI r16, PERCENT_MAX+1
+    BRLO display_value     ; If less than or equal to 100, continue
+    LDI r16, PERCENT_MAX   ; Cap at 100% if above
+    
+display_value:
+    ; Display percentage value using LCD_send_a_register
+    LCD_send_a_register r16
+    
     ; Display "%" sign
     LDI ZL, LOW(2*percent_sign)
     LDI ZH, HIGH(2*percent_sign)
