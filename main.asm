@@ -1,45 +1,74 @@
 .include "include/m328pdef.inc"
 .include "include/delay_Macro.inc"
 .include "include/1602_LCD_Macros.inc"
+
+; Define constants
+.equ SENSOR_PIN = 0       ; ADC0 pin
+.equ ADC_MAX    = 1023    ; Maximum ADC value
+.equ PERCENT_MAX = 100    ; Maximum percentage value
+
+; Define strings for LCD display
 .cseg
-.org 0x0000
-LCD_init ; initilize the 16x2 LCD
+moisture_text: .db "Moisture: ", 0, 0   ; Extra 0 to make length even
+percent_sign: .db " %", 0, 0            ; Extra 0 to make length even
+len_moisture: .equ moisture_len = (2 * (percent_sign - moisture_text)) - 2
+len_percent: .equ percent_len = 4       ; Length of " %" with padding
+; .org 0x0000
+
+; Main program
+main:
+    ; Initialize ADC
+    LDI r16, (1<<REFS0)           ; Set reference voltage to AVcc
+    STS ADMUX, r16
+    LDI r16, (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0) ; Enable ADC, set prescaler to 128
+    STS ADCSRA, r16
+
+    LCD_init                      ; Initialize LCD
+    LCD_backlight_ON              ; Turn on LCD backlight
+    LCD_clear                     ; Clear LCD display
 
 loop:
+    LCD_clear                     ; Clear LCD display
+    LCD_send_a_command 0x80       ; Set cursor to beginning of first row
 
-LCD_send_a_command 0x01 ; clear the LCD
-; Display an integer on LCD
-LDI r16, 123
-LCD_send_a_register r16
-delay 1000
-LCD_send_a_command 0x01 ; clear the LCD
-; Display character on LCD
-; Sending Hello World to LCD character-by-character
-LCD_send_a_character 0x48 ; 'H'
-LCD_send_a_character 0x45 ; 'E'
-LCD_send_a_character 0x4C ; 'L'
-LCD_send_a_character 0x4C ; 'L'
-LCD_send_a_character 0x4F ; 'O'
-LCD_send_a_character 0x20 ; ' ' (space)
-LCD_send_a_character 0x57 ; 'W'
-LCD_send_a_character 0x4F ; 'O'
-LCD_send_a_character 0x52 ; 'R'
-LCD_send_a_character 0x4C ; 'L'
-LCD_send_a_character 0x44 ; 'D'
-LCD_send_a_character 0x21 ; '!'
-LCD_send_a_command 0xC0 ; move curser to next line
-LCD_send_a_character 0x43 ; 'C'
-LCD_send_a_character 0x4F ; 'O'
-LCD_send_a_character 0x41 ; 'A'
-LCD_send_a_character 0x4C ; 'L'
-LCD_send_a_command 0x14 ; move curser one step forward (another way to add space)
-LCD_send_a_character 0x4C ; 'L'
-LCD_send_a_character 0x41 ; 'A'
-LCD_send_a_character 0x42 ; 'B'
-delay 1000
-LCD_send_a_command 0x01 ; clear the LCD
-rjmp loop
-; it is recommanded to define the strings at the end of the code segment
-; The length of the string must be even number of bytes
-hello_string: .db "Tehseen.",0
-len: .equ string_len = (2 * (len - hello_string)) - 1
+    ; Display "Moisture: " text
+    LDI ZL, LOW(2*moisture_text)
+    LDI ZH, HIGH(2*moisture_text)
+    LDI r20, moisture_len
+    LCD_send_a_string
+
+    ; Read analog value from ADC
+    LDI r16, (1<<REFS0)|SENSOR_PIN ; Select ADC channel with AVcc reference
+    STS ADMUX, r16
+    LDI r16, (1<<ADEN)|(1<<ADSC)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0) ; Start conversion
+    STS ADCSRA, r16
+wait_conversion:
+    LDS r16, ADCSRA
+    SBRC r16, ADSC                ; Wait for conversion to complete (ADSC becomes 0)
+    RJMP wait_conversion
+    LDS r16, ADCL                 ; Read low byte
+    LDS r17, ADCH                 ; Read high byte
+
+    ; Map ADC value to percentage (inverted to represent moisture)
+    ; Inputs: r16:r17 = ADC value (10-bit)
+    ; Outputs: r16 = percentage (0-100)
+    LDI r16, PERCENT_MAX
+    SUB r16, r17                  ; 100 - (ADC high byte)
+    ; Ensure value is within bounds
+    CPI r16, PERCENT_MAX
+    BRLO percentage_ok           ; If less than 100, skip
+    LDI r16, PERCENT_MAX         ; Cap at 100%
+percentage_ok:
+
+    ; Display percentage value
+    LCD_send_a_register r16
+
+    ; Display "%" sign
+    LDI ZL, LOW(2*percent_sign)
+    LDI ZH, HIGH(2*percent_sign)
+    LDI r20, percent_len
+    LCD_send_a_string
+
+    delay 2000                    ; Wait 1 second before next reading
+
+    RJMP loop
