@@ -38,8 +38,8 @@
     sbc r17, r31        ; Subtract high byte of out_min with carry
 
     ; Step 4: Multiply (x - in_min) * (out_max - out_min)
-    movw r16, r20       ; Load (x - in_min) into r16:r17
-    movw r18, r16       ; Load (out_max - out_min) into r18:r19
+    movw r18, r16
+    movw r16, r20
     mul16u              ; Use the 16-bit multiplication macro
     movw r24, r20       ; Store lower 16 bits of result in r24:r25
 

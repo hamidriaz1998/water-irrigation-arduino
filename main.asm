@@ -14,6 +14,8 @@ moisture_text: .db "Moisture: ", 0, 0   ; Extra 0 to make length even
 percent_sign: .db " %", 0, 0            ; Extra 0 to make length even
 len_moisture: .equ moisture_len = (2 * (percent_sign - moisture_text)) - 2
 len_percent: .equ percent_len = 4       ; Length of " %" with padding
+value_text: .db "Value: ", 0
+len_value: .equ value_len = (2 * (value_text - value_text)) - 2
 ; .org 0x0000
 
 ; Main program
@@ -52,51 +54,40 @@ wait_conversion:
     ; x
     LDS r24, ADCL                 ; Read low byte
     LDS r25, ADCH                 ; Read high byte
-
-    ; in_min
-    CLR r26
-    CLR r27
-
-    ; out_min
-    CLR r30
-    CLR r31
-
-    ; in_max
-    LDI r28, LOW(ADC_MAX)
-    LDI r29, HIGH(ADC_MAX)
-
-    ; out_max
-    LDI r18, PERCENT_MAX
-    CLR r19
-
-    map
-
-    ; Map ADC value to percentage (inverted to represent moisture)
-    ; Inputs: r16:r17 = ADC value (10-bit)
-    ; Outputs: r16 = percentage (0-100)
-    ;LDI r16, PERCENT_MAX
-    ;SUB r16, r17                  ; 100 - (ADC high byte)
-    ; Ensure value is within bounds
-    ;CPI r16, PERCENT_MAX
-    ;BRLO percentage_ok           ; If less than 100, skip
-    ;LDI r16, PERCENT_MAX         ; Cap at 100%
-percentage_ok:
-
-    ; For soil moisture sensors, we need to invert the value as higher ADC values 
-    ; typically mean drier soil (less moisture)
-    ; r24:r25 currently has a value from 0-100 after mapping, we need to invert it
-    LDI r16, PERCENT_MAX   ; Load 100 into r16
-    SUB r16, r24           ; Calculate 100 - moisture_value to invert the reading
     
+    LCD_send_a_register r24
+    ; Formula: moisture_percent = ((1023 - adc_value) * 100) / 1023
+
+    ; Invert ADC value
+    LDI r20, LOW(ADC_MAX)
+    LDI r21, HIGH(ADC_MAX)
+    SUB r20, r24
+    SBC r21, r25
+
+    ; Multiply by 100
+    LDI r22, LOW(PERCENT_MAX)
+    LDI r23, HIGH(PERCENT_MAX)
+    movw r16, r20      ; Inverted value in r16:r17
+    movw r18, r22      ; 100 in r18:r19
+    mul16u             ; Result in r20:r23
+
+    ; Divide by 1023
+    LDI r18, LOW(ADC_MAX)
+    LDI r19, HIGH(ADC_MAX)
+    movw r16, r20      ; Numerator from multiplication result
+    div16u             ; Result in r16:r17
+
+    ; Final percentage is in r16 (lower byte)
+
     ; Ensure value is within bounds (should be 0-100)
     CPI r16, PERCENT_MAX+1
     BRLO display_value     ; If less than or equal to 100, continue
     LDI r16, PERCENT_MAX   ; Cap at 100% if above
-    
+
 display_value:
     ; Display percentage value using LCD_send_a_register
     LCD_send_a_register r16
-    
+
     ; Display "%" sign
     LDI ZL, LOW(2*percent_sign)
     LDI ZH, HIGH(2*percent_sign)

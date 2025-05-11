@@ -7,7 +7,7 @@
 # Compile that sweet assembly code
 all: banner
 	@echo "🚀 Assembling your masterpiece..."
-	@avra main.asm -o main.hex
+	@avra main.asm -o main.hex -l main.lst
 	@echo "✨ Assembly complete! Ready to flash some silicon!"
 
 # Flash that code to your microcontroller
