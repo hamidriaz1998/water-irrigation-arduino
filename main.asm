@@ -1,5 +1,6 @@
 .include "include/m328pdef.inc"
 .include "include/delay_Macro.inc"
+.include "include/map_Macro.inc"
 .include "include/1602_LCD_Macros.inc"
 
 ; Define constants
@@ -46,18 +47,39 @@ wait_conversion:
     LDS r16, ADCSRA
     SBRC r16, ADSC                ; Wait for conversion to complete (ADSC becomes 0)
     RJMP wait_conversion
-    LDS r16, ADCL                 ; Read low byte
-    LDS r17, ADCH                 ; Read high byte
+    ;LDS r16, ADCL                 ; Read low byte
+    ;LDS r17, ADCH                 ; Read high byte
+    ; x
+    LDS r24, ADCL                 ; Read low byte
+    LDS r25, ADCH                 ; Read high byte
+
+    ; in_min
+    CLR r26
+    CLR r27
+
+    ; out_min
+    CLR r30
+    CLR r31
+
+    ; in_max
+    LDI r28, LOW(ADC_MAX)
+    LDI r29, HIGH(ADC_MAX)
+
+    ; out_max
+    LDI r18, PERCENT_MAX
+    CLR r19
+    
+    map
 
     ; Map ADC value to percentage (inverted to represent moisture)
     ; Inputs: r16:r17 = ADC value (10-bit)
     ; Outputs: r16 = percentage (0-100)
-    LDI r16, PERCENT_MAX
-    SUB r16, r17                  ; 100 - (ADC high byte)
+    ;LDI r16, PERCENT_MAX
+    ;SUB r16, r17                  ; 100 - (ADC high byte)
     ; Ensure value is within bounds
-    CPI r16, PERCENT_MAX
-    BRLO percentage_ok           ; If less than 100, skip
-    LDI r16, PERCENT_MAX         ; Cap at 100%
+    ;CPI r16, PERCENT_MAX
+    ;BRLO percentage_ok           ; If less than 100, skip
+    ;LDI r16, PERCENT_MAX         ; Cap at 100%
 percentage_ok:
 
     ; Display percentage value
