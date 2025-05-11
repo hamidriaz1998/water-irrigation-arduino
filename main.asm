@@ -68,7 +68,7 @@ wait_conversion:
     ; out_max
     LDI r18, PERCENT_MAX
     CLR r19
-    
+
     map
 
     ; Map ADC value to percentage (inverted to represent moisture)
@@ -83,8 +83,9 @@ wait_conversion:
 percentage_ok:
 
     ; Display percentage value
-    LCD_send_a_register r16
-
+    LCD_send_a_register r24
+    CLR r24
+    CLR r25
     ; Display "%" sign
     LDI ZL, LOW(2*percent_sign)
     LDI ZH, HIGH(2*percent_sign)
