@@ -4,6 +4,7 @@
 .include "include/div_Macro.inc"
 .include "include/map_Macro.inc"
 .include "include/1602_LCD_Macros.inc"
+.include "include/div_16_by_8.inc"
 .def A = r16
 .def AH = r17
 .cseg
@@ -27,7 +28,7 @@
 
 ; Reading Analog value from LDR Sensor
 loop:
-    LCD_backlight_ON 
+    ; LCD_backlight_ON 
     LCD_clear                ; Clear LCD display
     delay 10                 ; Give LCD time to clear
     LDS A,ADCSRA         ; Start Analog to Digital Conversion
@@ -54,43 +55,96 @@ wait:
     jmp LED_ON           ; use jmp for long range
 SKIP_LED_ON:
     CBI PORTB,5          ; LED OFF
-    ; writes the string "Day Time" to the UART
-    LDI ZL, LOW (2 * day_string)
-    LDI ZH, HIGH (2 * day_string)
-    LDI r20, day_string_len   ; Fixed string length variable
-    LCD_send_a_string
+    
+    ; First line - Show raw value
+    LCD_send_a_command 0x80   ; Move cursor to first line
+    LCD_send_a_character 'V'
+    LCD_send_a_character 'a'
+    LCD_send_a_character 'l'
+    LCD_send_a_character 'u'
+    LCD_send_a_character 'e'
+    LCD_send_a_character ':'
+    LCD_send_a_character ' '
+    LCD_send_a_register AH    ; Show raw ADC value
+    
+    ; Second line - Show percentage
+    LCD_send_a_command 0xC0   ; Move cursor to second line
+    
+    ; Calculate a direct percentage without the map8 function to compare
+    mov r20, AH          ; Copy raw value
+    com r20              ; Invert (255-value)
+    lsr r20              ; Divide by 2
+    lsr r20              ; Divide by 2 (now /4)
+    lsr r20              ; Now /8
+    add r20, r20         ; Multiply by 2 (now /4)
+    add r20, r20         ; Multiply by 2 (now /2)
+    
+    LCD_send_a_character 'M'
+    LCD_send_a_character 'o'
+    LCD_send_a_character 'i'
+    LCD_send_a_character 's'
+    LCD_send_a_character 't'
+    LCD_send_a_character 'u'
+    LCD_send_a_character 'r'
+    LCD_send_a_character 'e'
+    LCD_send_a_character ':'
+    LCD_send_a_character ' '
+    LCD_send_a_register r20
+    LCD_send_a_character '%'
+    
+    ; Send to serial too
     Serial_writeStr
-    
-    ; Position cursor on second line
-    LCD_send_a_command 0xC0   ; Move to second line
-    
-    ; Trying map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ldi r22, 0      ; in_min
-    ldi r23, 255    ; in_max
-    ldi r24, 0      ; out_min
-    ldi r25, 100    ; out_max
-    map8 AH, r22, r23, r24, r25  ; output in r27
-    
-    ; Display percentage value on LCD
-    LCD_send_a_register r27
-    LCD_send_a_character 0x25   ; '%' character (the % symbol)
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     delay 500
-    rjmp loop
+    jmp loop
 LED_ON:
     SBI PORTB,5          ; LED ON
-    ; writes the string "Night Time" to the UART
-    LDI ZL, LOW (2 * night_string)
-    LDI ZH, HIGH (2 * night_string)
-    LDI r20, night_string_len  ; Fixed string length variable
-    LCD_send_a_string
+    
+    ; First line - Show raw value (same as SKIP_LED_ON section)
+    LCD_send_a_command 0x80   ; Move cursor to first line
+    LCD_send_a_character 'V'
+    LCD_send_a_character 'a'
+    LCD_send_a_character 'l'
+    LCD_send_a_character 'u'
+    LCD_send_a_character 'e'
+    LCD_send_a_character ':'
+    LCD_send_a_character ' '
+    LCD_send_a_register AH    ; Show raw ADC value
+    
+    ; Second line - Show percentage (same as SKIP_LED_ON section)
+    LCD_send_a_command 0xC0   ; Move cursor to second line
+    
+    ; Calculate a direct percentage without the map8 function to compare
+    mov r20, AH          ; Copy raw value
+    com r20              ; Invert (255-value)
+    lsr r20              ; Divide by 2
+    lsr r20              ; Divide by 2 (now /4)
+    lsr r20              ; Now /8
+    add r20, r20         ; Multiply by 2 (now /4)
+    add r20, r20         ; Multiply by 2 (now /2)
+    
+    LCD_send_a_character 'M'
+    LCD_send_a_character 'o'
+    LCD_send_a_character 'i'
+    LCD_send_a_character 's'
+    LCD_send_a_character 't'
+    LCD_send_a_character 'u'
+    LCD_send_a_character 'r'
+    LCD_send_a_character 'e'
+    LCD_send_a_character ':'
+    LCD_send_a_character ' '
+    LCD_send_a_register r20
+    LCD_send_a_character '%'
+    
+    ; Send to serial too
     Serial_writeStr
+    
     delay 500
-    rjmp loop
+    jmp loop
 
 ; String definitions with correct length calculations
-day_string: .db "Moisture ",0x0D,0x0A,0
-.equ day_string_len = 11        ; Length of "Moisture " + CR + LF + null
+day_string: .db "Moisture      ",0  ; 14 characters + null terminator
+.equ day_string_len = 14
 
-night_string: .db "Moisture ",0x0D,0x0A,0
-.equ night_string_len = 11      ; Length of "Moisture " + CR + LF + null
+night_string: .db "Moisture      ",0  ; 14 characters + null terminator
+.equ night_string_len = 14
