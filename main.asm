@@ -9,6 +9,9 @@
 .cseg
 .org 0x0000
 
+; Initialize I/O ports
+    SBI DDRB,5          ; Set PORTB pin 5 as output for LED
+
 ; ADC Configuration
     LDI A,0b11000111     ; [ADEN ADSC ADATE ADIF ADIE ADIE ADPS2 ADPS1 ADPS0]
     STS ADCSRA,A
@@ -20,9 +23,13 @@
     LCD_init                      ; Initialize LCD
     LCD_backlight_ON              ; Turn on LCD backlight
     LCD_clear                     ; Clear LCD display
+    delay 100                     ; Give LCD time to initialize
 
 ; Reading Analog value from LDR Sensor
 loop:
+    LCD_backlight_ON 
+    LCD_clear                ; Clear LCD display
+    delay 10                 ; Give LCD time to clear
     LDS A,ADCSRA         ; Start Analog to Digital Conversion
     ORI A,(1<<ADSC)
     STS ADCSRA,A
@@ -43,16 +50,23 @@ wait:
     Serial_writeChar ':'      ; just for formating (e.g. 180: Day Time or 220: NightTime)
     Serial_writeChar ' '
     cpi AH,200           ; compare LDR reading with our desired threshold
-    brsh LED_ON          ; jump if same or higher (AH >= 200)
+    brlo SKIP_LED_ON     ; branch if lower (AH < 200)
+    jmp LED_ON           ; use jmp for long range
+SKIP_LED_ON:
     CBI PORTB,5          ; LED OFF
     ; writes the string "Day Time" to the UART
     LDI ZL, LOW (2 * day_string)
     LDI ZH, HIGH (2 * day_string)
-    LDI r20, day_len
+    LDI r20, day_string_len   ; Fixed string length variable
     LCD_send_a_string
     Serial_writeStr
     ; Trying map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    map8 AH, 255, 0, 0, 100 ; output in r27
+    ldi r22, 0      ; in_min
+    ldi r23, 255    ; in_max
+    ldi r24, 0      ; out_min
+    ldi r25, 100    ; out_max
+    map8 AH, r22, r23, r24, r25  ; output in r27
+    LCD_send_a_character 0x25   ; '%' character
     LCD_send_a_register r27
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     delay 500
@@ -62,18 +76,15 @@ LED_ON:
     ; writes the string "Night Time" to the UART
     LDI ZL, LOW (2 * night_string)
     LDI ZH, HIGH (2 * night_string)
-    LDI r20, night_len
+    LDI r20, night_string_len  ; Fixed string length variable
     LCD_send_a_string
     Serial_writeStr
     delay 500
     rjmp loop
-; It is recommanded to define the strings at the end of the code segment.
-; Optionally you can use CRLF (carriage return/line feed) characters 0x0D and 0x0A at the
-;end of the string.
-; The string should be terminated with 0.
-; The overall length of the string (including CRLF and ending zero) must be even number of
-;bytes.
-day_string: .db "Day Time ",0x0D,0x0A,0
-day_len: .equ len_day = (2 * (day_len - day_string)) - 1
-night_string: .db "Night Time ",0x0D,0x0A,0
-night_len: .equ len_night = (2 * (night_len - night_string)) - 1
+
+; String definitions with correct length calculations
+day_string: .db "Moisture ",0x0D,0x0A,0
+.equ day_string_len = 11        ; Length of "Moisture " + CR + LF + null
+
+night_string: .db "Moisture ",0x0D,0x0A,0
+.equ night_string_len = 11      ; Length of "Moisture " + CR + LF + null
