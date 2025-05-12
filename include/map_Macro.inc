@@ -4,7 +4,7 @@
     ; @2 = in_max
     ; @3 = out_min
     ; @4 = out_max
-    ; @5 = result
+    ; r27 = result
 
     ; Temp usage:
     ; r22 = x - in_min
@@ -12,6 +12,10 @@
     ; r24 = mul result
     ; r25 = in_max - in_min
 
+    push r22
+    push r23
+    push r24
+    push r25
     ; Step 1: x - in_min → r22
     mov r22, @0
     sub r22, @1
@@ -37,5 +41,11 @@
     add r16, @3         ; result = quotient + out_min
 
     ; Step 7: Store final result
-    mov @5, r16
+    mov r27, r16
+    
+    
+    pop r25
+    pop r24
+    pop r23
+    pop r22
 .endmacro
