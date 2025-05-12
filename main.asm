@@ -49,44 +49,29 @@ wait_conversion:
     LDS r16, ADCSRA
     SBRC r16, ADSC                ; Wait for conversion to complete (ADSC becomes 0)
     RJMP wait_conversion
-    ;LDS r16, ADCL                 ; Read low byte
-    ;LDS r17, ADCH                 ; Read high byte
     ; x
-    LDS r24, ADCL                 ; Read low byte
-    LDS r25, ADCH                 ; Read high byte
-    
-    LCD_send_a_register r24
-    ; Formula: moisture_percent = ((1023 - adc_value) * 100) / 1023
+    LDS r16, ADCL                 ; Read low byte
+    LDS r17, ADCH                 ; Read high byte
 
-    ; Invert ADC value
-    LDI r20, LOW(ADC_MAX)
-    LDI r21, HIGH(ADC_MAX)
-    SUB r20, r24
-    SBC r21, r25
+    CLR r18  ; in_min
+    LDI r19, ADC_MAX ; in_max
+    CLR r20  ; out_min
+    LDI r21, PERCENT_MAX ; out_max
+    CLR r22  ; result
 
-    ; Multiply by 100
-    LDI r22, LOW(PERCENT_MAX)
-    LDI r23, HIGH(PERCENT_MAX)
-    movw r16, r20      ; Inverted value in r16:r17
-    movw r18, r22      ; 100 in r18:r19
-    mul16u             ; Result in r20:r23
+    map8 r17, r18, r19, r20, r21, r22
 
-    ; Divide by 1023
-    LDI r18, LOW(ADC_MAX)
-    LDI r19, HIGH(ADC_MAX)
-    movw r16, r20      ; Numerator from multiplication result
-    div16u             ; Result in r16:r17
 
     ; Final percentage is in r16 (lower byte)
 
     ; Ensure value is within bounds (should be 0-100)
-    CPI r16, PERCENT_MAX+1
+    CPI r22, PERCENT_MAX+1
     BRLO display_value     ; If less than or equal to 100, continue
-    LDI r16, PERCENT_MAX   ; Cap at 100% if above
+    LDI r22, PERCENT_MAX   ; Cap at 100% if above
 
 display_value:
     ; Display percentage value using LCD_send_a_register
-    LCD_send_a_register r16
+    LCD_send_a_register r22
 
     ; Display "%" sign
     LDI ZL, LOW(2*percent_sign)
