@@ -60,14 +60,20 @@ SKIP_LED_ON:
     LDI r20, day_string_len   ; Fixed string length variable
     LCD_send_a_string
     Serial_writeStr
+    
+    ; Position cursor on second line
+    LCD_send_a_command 0xC0   ; Move to second line
+    
     ; Trying map ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ldi r22, 0      ; in_min
     ldi r23, 255    ; in_max
     ldi r24, 0      ; out_min
     ldi r25, 100    ; out_max
     map8 AH, r22, r23, r24, r25  ; output in r27
-    LCD_send_a_character 0x25   ; '%' character
+    
+    ; Display percentage value on LCD
     LCD_send_a_register r27
+    LCD_send_a_character 0x25   ; '%' character (the % symbol)
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     delay 500
     rjmp loop
