@@ -12,6 +12,8 @@
 
 ; Initialize I/O ports
     SBI DDRB,5          ; Set PORTB pin 5 as output for LED
+    SBI DDRB,4        ; Set PORTB pin 4 as output for Relay for watering
+    CBI PORTB,4         ; Initialize relay to OFF state
 
 ; ADC Configuration
     LDI A,0b11000111     ; [ADEN ADSC ADATE ADIF ADIE ADIE ADPS2 ADPS1 ADPS0]
@@ -43,18 +45,19 @@ wait:
     LDS AH,ADCH
 
     delay 100            ; delay 100ms
-    Serial_writeReg_ASCII AH  ; sending the received value to UART
+    ; Serial_writeReg_ASCII AH  ; sending the received value to UART
     LCD_send_a_register AH
 
     LCD_send_a_character 0x3A ; ":"
     LCD_send_a_character 0x20 ; " "
-    Serial_writeChar ':'      ; just for formating (e.g. 180: Day Time or 220: NightTime)
-    Serial_writeChar ' '
+    ; Serial_writeChar ':'      ; just for formating (e.g. 180: Day Time or 220: NightTime)
+    ; Serial_writeChar ' '
     cpi AH,200           ; compare LDR reading with our desired threshold
     brlo SKIP_LED_ON     ; branch if lower (AH < 200)
     jmp LED_ON           ; use jmp for long range
 SKIP_LED_ON:
     CBI PORTB,5          ; LED OFF
+
     
     ; First line - Show raw value
     LCD_send_a_command 0x80   ; Move cursor to first line
@@ -93,13 +96,23 @@ SKIP_LED_ON:
     LCD_send_a_character '%'
     
     ; Send to serial too
-    Serial_writeStr
+    ; Serial_writeStr
+    Serial_writeReg_ASCII r20
+    cpi r20,30           ; Check if moisture percentage is below 30%
+    brlo PUMP_OFF        ; If dryness < 30%, turn pump off 
+    SBI PORTB,4          ; Turn ON the pump if dryness <= 30% 
 
     delay 500
+    jmp loop
+PUMP_OFF:
+    CBI PORTB,4   ; Turn off the pump
+         
+    delay 200
     jmp loop
 LED_ON:
     SBI PORTB,5          ; LED ON
     
+
     ; First line - Show raw value (same as SKIP_LED_ON section)
     LCD_send_a_command 0x80   ; Move cursor to first line
     LCD_send_a_character 'V'
@@ -137,9 +150,18 @@ LED_ON:
     LCD_send_a_character '%'
     
     ; Send to serial too
-    Serial_writeStr
+    ; Serial_writeStr
+    Serial_writeReg_ASCII r20
+    cpi r20,30           ; Compare r20 with 30
+    brsh PUMP_ON         ; If r20 >= 30 (dryness above 30%), jump to PUMP_ON 
+    CBI PORTB,4          ; Turn OFF the pump if dryness > 30% 
     
     delay 500
+    jmp loop
+PUMP_ON:
+    SBI PORTB,4          ; Turn on the pump
+
+    delay 200
     jmp loop
 
 ; String definitions with correct length calculations
