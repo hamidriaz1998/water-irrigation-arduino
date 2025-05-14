@@ -98,6 +98,7 @@ SKIP_LED_ON:
     ; Send to serial too
     ; Serial_writeStr
     Serial_writeReg_ASCII r20
+    Serial_writeNewLine
     cpi r20,30           ; Check if moisture percentage is below 30%
     brlo PUMP_OFF        ; If dryness < 30%, turn pump off 
     SBI PORTB,4          ; Turn ON the pump if dryness <= 30% 
@@ -152,6 +153,7 @@ LED_ON:
     ; Send to serial too
     ; Serial_writeStr
     Serial_writeReg_ASCII r20
+    Serial_writeNewLine
     cpi r20,30           ; Compare r20 with 30
     brsh PUMP_ON         ; If r20 >= 30 (dryness above 30%), jump to PUMP_ON 
     CBI PORTB,4          ; Turn OFF the pump if dryness > 30% 
