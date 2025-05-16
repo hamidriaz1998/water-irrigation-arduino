@@ -36,7 +36,7 @@
     delay 100                     ; Give LCD time to initialize
 
 
-; Reading Analog value from LDR Sensor
+; Reading Analog value from Moisture sensor
 loop:
     ; First check for any serial commands
     call check_serial_command     ; Check for commands from ESP32
