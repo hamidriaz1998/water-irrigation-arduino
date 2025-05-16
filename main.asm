@@ -282,7 +282,7 @@ send_ack_N:
 try_F_command:
     ; Process F command (OFF)
     cpi r16, 'F'
-    brne cmd_exit      ; Not a recognized command
+    brne try_M_command      ; Not a recognized command go for Write
     
     ; Store new state
     ldi r16, 'F'
@@ -297,6 +297,16 @@ try_F_command:
     ldi r16, 20        ; Set longer override (10s)
     mov OverrideCounter, r16
     rjmp send_ack_F
+try_M_command:
+    ; Process M command (request Moisture data)
+    cpi r16, 'M'
+    brne cmd_exit           ; No recognized command
+    
+    ; Send moisture reading when requested with 'M' command
+    Serial_writeChar 'M'    ; Moisture indicator prefix
+    Serial_writeReg_ASCII r20
+    Serial_writeNewLine
+    rjmp cmd_exit
     
 normal_F_command:
     ; OFF -> OFF: Use moisture control
