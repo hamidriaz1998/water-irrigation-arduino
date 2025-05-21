@@ -11,6 +11,7 @@
 .def temp8 = r22        ; Changed from r31 (ZH) to r22 to avoid conflict
 .def OverrideCounter = r23
 .def MAX_OVERRIDE = r24
+.def ControlMode = r25    ; 0 = AUTO, 1 = MANUAL
 .cseg
 .org 0x0000
 
@@ -21,6 +22,7 @@
     LDI LastCmd, ' '   ; Initialize LastCmd to space character
     LDI OverrideCounter, 0  ; No override active
     LDI MAX_OVERRIDE, 20    ; 10 loops = about 5 seconds (with your delay)
+    LDI ControlMode, 0       ; Start in AUTO mode by default
 
 ; ADC Configuration
     LDI A,0b11000111     ; [ADEN ADSC ADATE ADIF ADIE ADIE ADPS2 ADPS1 ADPS0]
@@ -127,6 +129,47 @@ auto_pump_off:
     jmp skip_moisture_control
 
 skip_auto_control:
+    ; Override is active, decrement counter
+    dec OverrideCounter
+    
+    ; Check if override just expired
+    cpi OverrideCounter, 0
+    brne still_in_override
+    
+    ; Override expired - revert to AUTO mode
+    ldi r16, 0
+    mov ControlMode, r16
+    
+    ; Send notification that AUTO mode is restored
+    Serial_writeChar 'A'
+    Serial_writeChar 'A'  ; "AA" = "Auto Active"
+    Serial_writeNewLine
+    jmp skip_moisture_control
+
+still_in_override:
+    ; Handle the rest of override behavior
+    ; Get last command
+    mov r16, LastCmd
+    
+    ; In MANUAL mode, strictly follow last command
+    cpi ControlMode, 1    ; Check if MANUAL mode
+    brne check_transition_logic
+    
+    ; MANUAL MODE: Honor LastCmd exactly
+    cpi r16, 'N'        ; LastCmd is ON?
+    brne manual_mode_off
+    
+    ; Force pump ON in manual mode
+    cbi PORTB, 4
+    rjmp skip_moisture_control
+    
+manual_mode_off:
+    ; Force pump OFF in manual mode
+    sbi PORTB, 4
+    rjmp skip_moisture_control
+    
+check_transition_logic:
+    ; Your existing transition logic for AUTO mode
     ; Override is active, decrement counter
     dec OverrideCounter
     
@@ -249,35 +292,18 @@ ValidCommand:
     ldi r16, 'N'
     mov LastCmd, r16
     
-    ; Check transition: OFF -> ON
-    cpi r17, 'F'        ; Was previous state OFF?
-    brne normal_N_command
+    ; Switch to MANUAL mode and set override
+    ldi r16, 1          ; Set to MANUAL mode
+    mov ControlMode, r16
     
-    ; OFF -> ON transition: Force ON
-    cbi PORTB, 4        ; Turn on pump during transition
-    ldi r16, 20        ; Set longer override (50s)
+    ; Set a long override time (e.g., 2 minutes = 240 loops at 500ms delay)
+    ldi r16, 240
     mov OverrideCounter, r16
-    rjmp send_ack_N
     
-normal_N_command:
-    ; ON -> ON: Use moisture control
-    cpi r17, ' '
-    brne NormalN
-    cbi PORTB, 4        ; Turn on pump during transition
-    ldi r16, 20        ; Set longer override (10s)
-    mov OverrideCounter, r16
-    rjmp send_ack_N
-NormalN:
-    ldi r16, 1          ; Short override
-    mov OverrideCounter, r16
-    rjmp send_ack_N
+    ; Turn pump ON immediately
+    cbi PORTB, 4
     
-send_ack_N:
-    ; Send acknowledgment
-    Serial_writeChar 'A'
-    Serial_writeChar 'N'
-    Serial_writeNewLine
-    rjmp cmd_exit
+    rjmp send_ack_N
     
 try_F_command:
     ; Process F command (OFF)
