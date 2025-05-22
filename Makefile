@@ -39,4 +39,22 @@ nuke:
 # Just for fun
 dance:
 	@echo "Let's celebrate your hardware skills!"
-	@echo "┏(-_-)┛┗(-_-﻿ )┓┗(-_-)┛┏(-_-)┓"
+	@sleep 0.2; clear; echo "   ┏(-_-)┛      "; \
+	sleep 0.2; clear; echo "      ┗(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛      "; \
+	sleep 0.2; clear; echo "      ┗(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛      "; \
+	sleep 0.2; clear; echo "      ┗(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛      "; \
+	sleep 0.2; clear; echo "      ┗(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛┗(-_-﻿ )┓"; \
+	sleep 0.2; clear; echo "┗(-_-)┛┏(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛┗(-_-﻿ )┓"; \
+	sleep 0.2; clear; echo "┗(-_-)┛┏(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛┗(-_-﻿ )┓"; \
+	sleep 0.2; clear; echo "┗(-_-)┛┏(-_-)┓   "; \
+	sleep 0.2; clear; echo "   ┏(-_-)┛┗(-_-﻿ )┓"; \
+	sleep 0.2; clear; echo "┗(-_-)┛┏(-_-)┓   "; \
+	sleep 0.2; clear; echo "💃 Dance party complete! 🕺"; \
+	sleep 1
+
