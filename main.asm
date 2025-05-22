@@ -149,11 +149,11 @@ check_off_to_on:
     rjmp skip_moisture_control  ; No, continue with normal ON state
     
 keep_pump_on:
-    sbi PORTB, 4       ; Force pump ON during transition
+    sbi PORTB, 4       ; Force pump OFF during transition
     rjmp skip_moisture_control
     
 keep_pump_off:
-    cbi PORTB, 4       ; Force pump OFF during transition
+    cbi PORTB, 4       ; Force pump ON during transition
     rjmp skip_moisture_control
 
 skip_moisture_control:
@@ -255,7 +255,7 @@ ValidCommand:
     
     ; OFF -> ON transition: Force ON
     cbi PORTB, 4        ; Turn on pump during transition
-    ldi r16, 20        ; Set longer override (50s)
+    ldi r16, 10        ; Set longer override (10s)
     mov OverrideCounter, r16
     rjmp send_ack_N
     
@@ -264,7 +264,7 @@ normal_N_command:
     cpi r17, ' '
     brne NormalN
     cbi PORTB, 4        ; Turn on pump during transition
-    ldi r16, 20        ; Set longer override (10s)
+    ldi r16, 10        ; Set longer override (10s)
     mov OverrideCounter, r16
     rjmp send_ack_N
 NormalN:
