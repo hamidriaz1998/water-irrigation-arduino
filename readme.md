@@ -9,39 +9,106 @@ Assembly language provides direct control over the microcontroller's hardware, e
 ## Prerequisites
 
 ### Hardware
+
 - Arduino UNO board
 - USB-A to B Cable for programming
 
 ### Software
+
 - AVRA assembler (Linux equivalent to Atmel's avrasm2)
 - avrdude (programmer software)
 
 ### Using WSL for Arduino Development
 
-If you are using Windows Subsystem for Linux (WSL) to develop and program your Arduino, follow these steps to enable USB device access:
+#### WSL Installation
+
+1. Install WSL by running the following command as administrator in PowerShell:
+
+   ```bash
+   wsl --install
+   ```
+
+   This will install the default Ubuntu distribution.
+
+   ```bash
+   wsl --install -d Ubuntu
+   ```
+
+2. After installation completes, you'll need to restart your computer.
+
+3. Upon restart, the Linux distribution setup will begin. Create a username and password when prompted.
+
+4. Update your Linux distribution:
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   ```
+
+#### Connecting Arduino to WSL
+
+To enable USB device access from WSL to your Arduino, follow these steps:
 
 1. Install `usbipd` on your Windows host machine:
-  ```bash
-  winget install usbipd
-  ```
 
-2. List available USB devices to identify your Arduino:
-  ```bash
-  usbipd list
-  ```
-  Look for the Arduino device in the list and note its `BUSID` (e.g., `1-2`).
+   ```bash
+   winget install usbipd
+   ```
 
-3. Bind the Arduino device to make it accessible to WSL:
-  ```bash
-  usbipd bind --busid <BUSID>
-  ```
+   [SCREENSHOT: usbipd installation in Windows![Installing usbipd on Windows](images/usbipd_installation.png)]
 
-4. Attach the device to your WSL instance:
-  ```bash
-  usbipd attach --wsl --busid <BUSID>
-  ```
+2. Ensure WSL is running before attempting to use usbipd. If you try to bind devices before starting WSL, you'll receive an error:
 
-Replace `<BUSID>` with the actual BUSID of your Arduino device. Once attached, the Arduino will be accessible within your WSL environment.
+   ```bash
+   wsl --status
+   ```
+
+   If WSL isn't running, start it with:
+
+   ```bash
+   wsl
+   ```
+
+   [SCREENSHOT: Starting WSL before binding devices![Starting WSL](images/start_wsl_1.jpeg)]
+   ![Starting WSL](images/start_wsl_2.jpeg)]
+
+3. List available USB devices to identify your Arduino:
+
+   ```bash
+   usbipd list
+   ```
+
+   Look for the Arduino device in the list and note its `BUSID` (e.g., `1-2`).
+
+   [SCREENSHOT: usbipd list showing Arduino device[![usbipd list showing Arduino device](images/usbipd_list.png)]]
+
+4. Bind the Arduino device to make it accessible to WSL:
+
+   ```bash
+   usbipd bind --busid <BUSID>
+   ```
+
+   [SCREENSHOT: binding Arduino device to WSL]
+
+5. Attach the device to your WSL instance:
+
+   ```bash
+   usbipd attach --wsl --busid <BUSID>
+   ```
+
+   [SCREENSHOT: attaching Arduino device to WSL]
+
+6. In your WSL terminal, verify the Arduino is available:
+
+   ```bash
+   ls /dev/tty*
+   ```
+
+   You should see your Arduino listed (often as `/dev/ttyACM0`).
+
+   [SCREENSHOT: WSL terminal showing Arduino device]
+
+Replace `<BUSID>` with the actual BUSID of your Arduino device from step 2. Once attached, the Arduino will be accessible within your WSL environment and ready for development.
+
+Note: You'll need to repeat the binding and attaching steps each time you reconnect your Arduino or restart your computer.
 
 ## Installation
 
@@ -118,6 +185,7 @@ Replace `/dev/ttyACM0` with the correct device path for your Arduino.
 ## Credits
 
 Macro files in the `include/` directory were created by:
+
 - Syed Tehseen ul Hasan Shah, Lecturer, University of Engineering and Technology Lahore [github](https://github.com/tehseenhasan)
 
 ## License
